@@ -1,0 +1,14 @@
+{
+  "name": "@clickflow/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/server.js"
+  },
+  "dependencies": { "@clickflow/shared": "0.1.0", "express": "^5.1.0", "zod": "^4.6.7" },
+  "devDependencies": { "@types/express": "^5.0.3", "tsx": "^4.20.6" }
+}

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "task-fixture-1",
+  "revision": 0,
+  "originalRequest": "Focus the search field",
+  "status": "planning",
+  "initialContext": null,
+  "currentContext": null,
+  "plan": null,
+  "actionHistory": [],
+  "verificationResults": [],
+  "recoveryHistory": [],
+  "errors": [],
+  "retryCounts": {},
+  "limits": {
+    "maxAttemptsPerStep": 2,
+    "maxActions": 50,
+    "maxRecoveries": 5,
+    "maxModelCalls": 15,
+    "taskTimeoutMs": 600000,
+    "actionTimeoutMs": 10000,
+    "modelTimeoutMs": 60000
+  },
+  "cancellationRequested": false,
+  "createdAt": "2026-10-28T12:00:00.000Z",
+  "updatedAt": "2026-10-28T12:00:00.000Z",
+  "result": null
+}

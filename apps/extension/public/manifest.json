@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "ClickFlow",
+  "version": "0.1.0",
+  "description": "Complete plans. Verified browser actions. Phase 1 foundation.",
+  "minimum_chrome_version": "120",
+  "permissions": ["sidePanel"],
+  "host_permissions": ["http://127.0.0.1/*"],
+  "action": { "default_title": "Open ClickFlow" },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "side_panel": { "default_path": "sidepanel.html" },
+  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'self'; connect-src http://127.0.0.1:3001" }
+}

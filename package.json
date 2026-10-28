@@ -1,0 +1,31 @@
+{
+  "name": "clickflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A stateful browser agent: complete plans, verified actions.",
+  "workspaces": ["packages/*", "apps/*"],
+  "engines": { "node": "^22.13.0 || ^24.0.0 || >=26.0.0", "npm": ">=10" },
+  "scripts": {
+    "dev": "npm run build -w @clickflow/shared && concurrently --kill-others -n backend,extension \"npm run dev -w @clickflow/backend\" \"npm run dev -w @clickflow/extension\"",
+    "build": "npm run build -w @clickflow/shared && npm run build -w @clickflow/backend && npm run build -w @clickflow/extension",
+    "typecheck": "npm run build -w @clickflow/shared && npm run typecheck --workspaces --if-present && tsc -p tsconfig.tests.json",
+    "lint": "eslint . --max-warnings 0",
+    "test": "npm run build -w @clickflow/shared && vitest run",
+    "test:watch": "npm run build -w @clickflow/shared && vitest",
+    "test:restart": "npm run build -w @clickflow/shared && npm run build -w @clickflow/backend && node --test tests/restart.test.mjs",
+    "test:extension": "npm run build -w @clickflow/shared && node --test tests/extension-build.test.mjs",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build && npm run test:restart && npm run test:extension",
+    "start": "npm run start -w @clickflow/backend"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.19.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^10.13.0",
+    "globals": "^16.5.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.0.5"
+  }
+}
