@@ -1,12 +1,39 @@
 import { useEffect, useState } from 'react';
-import type { HealthResponse } from '@clickflow/shared';
+import { DEFAULT_PREFERENCES, preferencesSchema, type HealthResponse, type Preferences } from '@clickflow/shared';
 import { BACKEND_URL, checkBackend } from '../services/backend.js';
+import { TaskRunner } from './TaskRunner.js';
+import { FixtureTools } from './FixtureTools.js';
+import { WebsiteAccess } from './WebsiteAccess.js';
+import { AgentSettings } from './AgentSettings.js';
+import { hasExtensionRuntime } from '../services/browser-tools.js';
 
 type Connection = { status: 'checking' } | { status: 'connected'; health: HealthResponse } | { status: 'offline' };
 
 export function App() {
   const [connection, setConnection] = useState<Connection>({ status: 'checking' });
   const [checkNumber, setCheckNumber] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
+  const [preferencesReady, setPreferencesReady] = useState(!hasExtensionRuntime());
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!hasExtensionRuntime()) return;
+    let disposed = false;
+    const apply = (raw: unknown) => { const parsed = preferencesSchema.safeParse(raw); if (parsed.success) setPreferences(parsed.data); };
+    void chrome.storage.local.get('clickflowPreferences').then((stored) => { if (!disposed && stored.clickflowPreferences !== undefined) apply(stored.clickflowPreferences); })
+      .catch(() => { if (!disposed) setSettingsError('Preferences could not be loaded; safety defaults are in use.'); }).finally(() => { if (!disposed) setPreferencesReady(true); });
+    const changed = (changes: Record<string, chrome.storage.StorageChange>, area: string) => { if (!disposed && area === 'local' && changes.clickflowPreferences) apply(changes.clickflowPreferences.newValue); };
+    chrome.storage.onChanged.addListener(changed);
+    return () => { disposed = true; chrome.storage.onChanged.removeListener(changed); };
+  }, []);
+
+  function savePreferences(next: Preferences) {
+    const parsed = preferencesSchema.safeParse(next);
+    if (!parsed.success) { setSettingsError('Choose a valid limit no higher than the safety default.'); return; }
+    setPreferences(parsed.data); setSettingsError(null);
+    if (hasExtensionRuntime()) void chrome.storage.local.set({ clickflowPreferences: parsed.data }).catch(() => setSettingsError('Preferences could not be saved. They may reset when the panel closes.'));
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -31,7 +58,7 @@ export function App() {
           <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 5h7v6H6zM13 11h5v8h-7v-8" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="m6 16 3 3-3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
           <span>ClickFlow</span>
         </a>
-        <span className="phase-tag">PHASE 01</span>
+        <div className="header-actions"><button className="text-button" aria-expanded={settingsOpen} aria-controls="agent-settings" onClick={() => { setSettingsOpen(true); document.getElementById('settings-summary')?.focus(); }}>Settings</button><span className="phase-tag">PHASE 09</span></div>
       </header>
 
       <main id="main" className="flex flex-1 flex-col gap-6 px-5 py-6">
@@ -48,25 +75,21 @@ export function App() {
           <p className="body-copy">A browser agent that plans the whole task, takes one action at a time, and checks what happened.</p>
         </section>
 
-        <section className="composer" aria-labelledby="task-heading">
-          <label id="task-heading" htmlFor="task" className="field-label">What would you like to do?</label>
-          <textarea id="task" rows={4} disabled aria-describedby="task-help" placeholder="Find three laptops under ₹50,000 and compare their specifications…" />
-          <div className="composer-bottom flex flex-wrap items-center justify-between gap-3">
-            <span className="privacy-label"><span aria-hidden="true">◇</span> Review before running</span>
-            <button className="primary-button" disabled aria-describedby="task-help">Generate plan <span aria-hidden="true">→</span></button>
-          </div>
-          <p id="task-help" className="helper-copy">Task planning and browser actions arrive in later phases. No page data is collected in this build.</p>
-        </section>
+        <AgentSettings open={settingsOpen} onToggle={setSettingsOpen} preferences={preferences} onChange={savePreferences} status={label} {...(connection.status === 'connected' ? { health: connection.health } : {})} error={settingsError} />
+        <WebsiteAccess />
+        <TaskRunner preferences={preferences} preferencesReady={preferencesReady} onPreferencesChange={savePreferences} />
+
+        <FixtureTools />
 
         <section className="foundation-card" aria-labelledby="foundation-heading">
-          <div className="mb-3 flex items-center justify-between gap-3"><h2 id="foundation-heading">The foundation</h2><span className="small-label">BUILD 0.1.0</span></div>
-          <p className="body-copy small">The workspace, shared contracts, and durable storage are ready for the execution engine.</p>
+          <div className="mb-3 flex items-center justify-between gap-3"><h2 id="foundation-heading">The agent lifecycle</h2><span className="small-label">BUILD 0.2.0</span></div>
+          <p className="body-copy small">Review the plan, verify each action, and assess the goal against recorded sources.</p>
           <ol className="flow-list" aria-label="Planned execution lifecycle">
             <li><span className="flow-number">01</span><span><strong>Plan the whole task</strong><small>See every step before you start.</small></span></li>
             <li><span className="flow-number">02</span><span><strong>Act, then verify</strong><small>One action. A checked outcome.</small></span></li>
             <li><span className="flow-number">03</span><span><strong>Keep the plan current</strong><small>Adapt when the page changes.</small></span></li>
           </ol>
-          <p className="helper-copy">Lifecycle preview · execution is not available yet</p>
+          <p className="helper-copy">Evidence-based results · durable checkpoints · one action per Start</p>
         </section>
 
         <details className="connection-details">
@@ -74,7 +97,7 @@ export function App() {
           <dl className="details-list">
             <div><dt>Backend</dt><dd>{BACKEND_URL}</dd></div>
             <div><dt>API</dt><dd>{connection.status === 'connected' ? `v${connection.health.version} · phase ${connection.health.phase}` : 'Not verified'}</dd></div>
-            <div><dt>Model integration</dt><dd>Not implemented</dd></div>
+            <div><dt>Model integration</dt><dd>Permitted-site planning and one verified step per Start</dd></div>
             {connection.status === 'connected' ? <div><dt>Configured model</dt><dd>{connection.health.model.name}</dd></div> : null}
           </dl>
           {connection.status === 'offline' ? <p className="helper-copy">Start the local backend with <code>npm run dev</code>, then check the connection again.</p> : null}

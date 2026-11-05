@@ -1,5 +1,20 @@
 {
   "extends": "./tsconfig.base.json",
-  "compilerOptions": { "module": "ESNext", "moduleResolution": "Bundler", "noEmit": true, "types": ["node"] },
-  "include": ["tests/**/*.ts", "packages/**/*.test.ts", "apps/backend/**/*.test.ts", "vitest.config.ts"]
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "types": [
+      "node",
+      "chrome"
+    ]
+  },
+  "include": [
+    "tests/**/*.ts",
+    "packages/**/*.test.ts",
+    "apps/backend/**/*.test.ts",
+    "vitest.config.ts",
+    "apps/extension/**/*.test.ts",
+    "playwright.config.ts"
+  ]
 }

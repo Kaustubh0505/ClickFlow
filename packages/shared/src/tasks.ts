@@ -1,9 +1,13 @@
 import { z } from 'zod';
 import { actionSchema } from './actions.js';
+import { extractionSchema } from './browser-tools.js';
 import { observationSchema } from './observation.js';
 import { planPatchSchema, planSchema } from './plans.js';
 import { executionLimitsSchema, idSchema, taskStatusSchema, textSchema, timestampSchema } from './primitives.js';
 import { evidenceSchema, verificationResultSchema } from './verification.js';
+import { confirmationSchema } from './safety.js';
+import { reconciliationEntrySchema } from './resume.js';
+import { citationSchema } from './completion.js';
 
 export const actionEnvelopeSchema = z.strictObject({
   taskId: idSchema,
@@ -15,6 +19,8 @@ export const actionEnvelopeSchema = z.strictObject({
   leaseId: idSchema,
   leaseExpiresAt: timestampSchema,
   action: actionSchema,
+  requiresConfirmation: z.boolean().default(false),
+  protocolVersion: z.union([z.literal(1), z.literal(2)]).default(1),
 });
 
 export const actionOutcomeSchema = z.strictObject({
@@ -22,6 +28,7 @@ export const actionOutcomeSchema = z.strictObject({
   dispatchStatus: z.enum(['not_dispatched', 'dispatched', 'uncertain']),
   recordedAt: timestampSchema,
   verification: verificationResultSchema.nullable(),
+  extraction: extractionSchema.nullable().default(null),
   error: z.strictObject({ code: idSchema, message: textSchema }).nullable(),
 }).superRefine((outcome, ctx) => {
   if (outcome.dispatchStatus === 'not_dispatched' && outcome.verification?.status === 'passed') {
@@ -32,7 +39,7 @@ export const actionOutcomeSchema = z.strictObject({
 export const completionResultSchema = z.strictObject({
   status: z.enum(['completed', 'partial', 'blocked', 'failed']),
   summary: textSchema,
-  criteria: z.array(z.strictObject({ criterionId: idSchema, status: z.enum(['met', 'unmet', 'unknown']), evidenceIds: z.array(idSchema).max(100) })).max(30),
+  criteria: z.array(z.strictObject({ criterionId: idSchema, status: z.enum(['met', 'unmet', 'unknown']), evidenceIds: z.array(idSchema).max(100), citations: z.array(citationSchema).max(100).default([]) })).max(30),
   evidence: z.array(evidenceSchema).max(200),
 }).superRefine((result, ctx) => {
   const ids = new Set(result.evidence.map((evidence) => evidence.id));
@@ -53,11 +60,24 @@ export const taskStateSchema = z.strictObject({
   initialContext: observationSchema.nullable(),
   currentContext: observationSchema.nullable(),
   plan: planSchema.nullable(),
+  pendingAction: z.strictObject({ authorization: actionEnvelopeSchema, verification: verificationResultSchema.shape.condition }).nullable().default(null),
   actionHistory: z.array(actionOutcomeSchema).max(200),
   verificationResults: z.array(verificationResultSchema).max(200),
   recoveryHistory: z.array(z.strictObject({ at: timestampSchema, patch: planPatchSchema })).max(20),
   errors: z.array(z.strictObject({ at: timestampSchema, code: idSchema, message: textSchema })).max(200),
   retryCounts: z.record(idSchema, z.number().int().min(0).max(5)),
+  modelCallCount: z.number().int().nonnegative().default(0),
+  recoveryAttemptCount: z.number().int().nonnegative().default(0),
+  recoveryRequestIds: z.array(idSchema).max(20).default([]),
+  confirmations: z.array(z.strictObject({ challenge: confirmationSchema, approvedAt: timestampSchema.nullable() })).max(200).default([]),
+  reconciliationHistory: z.array(reconciliationEntrySchema).max(200).default([]),
+  resumeRequired: z.boolean().default(false),
+  planNeedsRecovery: z.boolean().default(false),
+  planningRequestId: idSchema.nullable().default(null),
+  completionRequestId: idSchema.nullable().default(null),
+  completionRequestIds: z.array(idSchema).max(100).default([]),
+  completionHistory: z.array(z.strictObject({ requestId: idSchema, at: timestampSchema, planVersion: z.number().int().positive(), result: completionResultSchema })).max(100).default([]),
+  dispatchClaims: z.array(z.strictObject({ actionId: idSchema, leaseId: idSchema, claimedAt: timestampSchema })).max(200).default([]),
   limits: executionLimitsSchema,
   cancellationRequested: z.boolean(),
   createdAt: timestampSchema,
@@ -68,7 +88,9 @@ export const taskStateSchema = z.strictObject({
   if (Date.parse(task.updatedAt) < Date.parse(task.createdAt)) issue('Updated timestamp cannot precede creation');
   if (!['planning', 'cancelled', 'failed', 'paused'].includes(task.status) && task.plan === null) issue('Task status requires a plan');
   if (task.plan && task.plan.goal !== task.originalRequest) issue('Plan must preserve the original user goal');
+  if (task.pendingAction && (task.pendingAction.authorization.taskId !== task.id || task.pendingAction.authorization.planVersion !== task.plan?.version || task.pendingAction.authorization.stepId !== task.plan?.currentStepId || task.pendingAction.authorization.observationId !== task.currentContext?.id || !task.plan.steps.some((step) => step.id === task.pendingAction?.authorization.stepId && step.status === 'in_progress'))) issue('Prepared action must match the current task, plan, step and observation');
   if (task.actionHistory.some((outcome) => outcome.authorization.taskId !== task.id)) issue('Action history must belong to this task');
+  if (task.completionRequestId && (task.status !== 'waiting_for_model' || !task.completionRequestIds.includes(task.completionRequestId))) issue('Active assessment must match its persisted request reservation');
   if (new Set(task.actionHistory.map((outcome) => outcome.authorization.actionId)).size !== task.actionHistory.length) issue('Action outcomes must have unique action IDs');
   if (task.status === 'completed') {
     if (task.result?.status !== 'completed' || !task.plan || task.plan.steps.some((step) => !['completed', 'skipped'].includes(step.status))) issue('Completed task requires verified results and no unfinished steps');

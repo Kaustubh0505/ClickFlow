@@ -1,0 +1,22 @@
+:root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #172d27; background: #f8f9f6; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1050px; margin: 0 auto; padding: 28px; }
+header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 44px; }
+.fixture-brand { font-weight: 700; font-size: 20px; }.fixture-brand span { font-weight: 400; color: #52645b; margin-left: 12px; font-size: 14px; }
+.fixture-badge { font-size: 10px; letter-spacing: 1px; border: 1px solid #dce3dc; border-radius: 5px; padding: 7px; }
+h1 { font-size: clamp(25px, 4vw, 38px); font-weight: 550; letter-spacing: -1.3px; margin-bottom: 12px; }h2 { font-size: 17px; margin: 0 0 20px; }
+.intro { max-width: 68ch; line-height: 1.7; color: #52645b; margin-bottom: 30px; }
+.fixture-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+section { background: #fff; border: 1px solid #dce3dc; border-radius: 12px; padding: 22px; }
+label { display: block; font-size: 13px; font-weight: 600; margin: 16px 0 8px; }
+input:not([type="checkbox"]) { width: 100%; min-height: 40px; border: 1px solid #bccbbf; border-radius: 6px; padding: 9px; color: #172d27; font: inherit; font-size: 14px; }
+input[type="hidden"] { display: none; }
+button { min-height: 38px; border: 1px solid #b7c9ba; border-radius: 6px; padding: 9px 12px; background: #edf2e9; color: #205b43; font: inherit; font-size: 12px; cursor: pointer; }
+button:disabled { color: #677263; background: #f0f2ee; cursor: not-allowed; }button:hover:enabled { background: #e0e9db; }
+:focus-visible { outline: 3px solid #528160; outline-offset: 3px; }.fixture-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-block: 18px; }
+output { display: block; overflow-wrap: anywhere; color: #52645b; font-size: 12px; line-height: 1.6; margin-top: 8px; }
+p { font-size: 13px; line-height: 1.7; color: #52645b; }hr { margin-block: 24px; border: 0; border-top: 1px solid #dce3dc; }
+[role="status"] { margin-top: 14px; padding: 12px; background: #edf2e9; border-radius: 6px; font-size: 13px; }
+.privacy-section { margin-top: 20px; }.fixture-toggle { display: flex; align-items: center; gap: 8px; margin-top: 0; }footer { margin-block: 24px; color: #52645b; font-size: 12px; line-height: 1.6; }
+@media (max-width: 650px) { .fixture-grid { grid-template-columns: 1fr; }main { padding: 18px; }header { flex-wrap: wrap; margin-bottom: 28px; } }

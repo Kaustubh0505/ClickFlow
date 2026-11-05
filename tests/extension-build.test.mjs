@@ -20,10 +20,12 @@ before(async () => {
 test('unpacked extension has valid local entrypoints and minimal permissions', async () => {
   const manifest = JSON.parse(await readFile(join(directory, 'manifest.json'), 'utf8'));
   assert.equal(manifest.manifest_version, 3);
-  assert.deepEqual(manifest.permissions, ['sidePanel']);
+  assert.deepEqual(manifest.permissions, ['sidePanel', 'activeTab', 'scripting', 'storage']);
   assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1/*']);
+  assert.deepEqual(manifest.optional_host_permissions, ['http://*/*', 'https://*/*']);
   assert.equal(manifest.content_scripts, undefined);
   await access(join(directory, manifest.background.service_worker));
+  await access(join(directory, 'content.js'));
   await access(join(directory, manifest.side_panel.default_path));
   const html = await readFile(join(directory, manifest.side_panel.default_path), 'utf8');
   for (const [, asset] of html.matchAll(/(?:src|href)="\.\/([^"#]+)"/g)) await access(join(directory, asset));

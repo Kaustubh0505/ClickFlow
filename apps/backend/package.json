@@ -1,14 +1,25 @@
 {
   "name": "@clickflow/backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "plan": "tsx src/agent/cli.ts",
+    "test:model:live": "tsx src/agent/live-smoke.ts",
+    "test:recovery:live": "tsx src/agent/recovery-smoke.ts"
   },
-  "dependencies": { "@clickflow/shared": "0.1.0", "express": "^5.1.0", "zod": "^4.6.7" },
-  "devDependencies": { "@types/express": "^5.0.3", "tsx": "^4.20.6" }
+  "dependencies": {
+    "@clickflow/shared": "0.2.0",
+    "express": "^5.1.0",
+    "openai": "^7.45.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "tsx": "^4.20.6"
+  }
 }

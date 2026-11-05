@@ -5,5 +5,5 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: './',
-  build: { target: 'chrome120', rolldownOptions: { input: 'sidepanel.html' } },
+  build: { target: 'chrome120', rolldownOptions: { input: ['sidepanel.html', 'fixtures/browser.html', 'fixtures/details.html'] } },
 });

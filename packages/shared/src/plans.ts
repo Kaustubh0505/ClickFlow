@@ -3,7 +3,7 @@ import { actionSchema } from './actions.js';
 import { idSchema, riskSchema, stepStatusSchema, textSchema } from './primitives.js';
 import { verificationConditionSchema } from './verification.js';
 
-export const goalCriterionSchema = z.strictObject({ id: idSchema, description: textSchema });
+export const goalCriterionSchema = z.strictObject({ id: idSchema, description: textSchema, verification: verificationConditionSchema.optional() });
 
 export const planStepSchema = z.strictObject({
   id: idSchema,
